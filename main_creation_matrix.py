@@ -8,7 +8,7 @@ import geopandas as gpd
 import pickle
 from pathlib import Path
 import argparse
-from pyspark.sql.functions import expr, to_timestamp, col, unix_timestamp, first, sum
+from pyspark.sql.functions import expr, to_timestamp, col, unix_timestamp, first, sum, count
 from pyspark.sql.types import *
 from pyspark.sql.types import LongType, IntegerType
 
@@ -16,13 +16,13 @@ from pyspark.sql.types import LongType, IntegerType
 os.chdir(Path(__file__).resolve().parent)
 
 # Datapath file CSV (dataset)
-pathCSV = '.../dataset.csv'
+pathCSV = 'data/trips2323_new.csv'
 
 # Path ShapeFile
-pathShapeF = '.../shapefile.shp'
+pathShapeF = 'data/shapefile/shapefile_2323.shp'
 
 # Path for results
-pathRes = '.../results'
+pathRes = 'results/'
 
 # Skip division per 0
 np.seterr(divide='ignore', invalid='ignore')
@@ -44,7 +44,10 @@ def preprocessing(df):
     fill = {'from_zone_fid': -1}
     df = df.fillna(value=fill)
 
-    df = df.loc[(df.triptime_s < 3278) & (df.tripdistance_m > 0) & (df.stoptime_s > 0) & (df.stoptime_s < 123818)]
+
+    # Initial Filter
+    # (df.triptime_s < 3278)
+    df = df.loc[ (df.tripdistance_m > 0) & (df.stoptime_s > 0) & (df.stoptime_s < 123818)]
 
     #df = df.sort_values(by=['from_timedate_gmt', 'to_timedate_gmt'])
     #df = df.reset_index(drop = True)
@@ -75,7 +78,6 @@ def count_zones(dataframe, col):
 # Generator of calendar with specific timestamp (start/end='dd-mm-yyyy', freq='20min', '8hour', ...)
 def calendar(start, end, freq):
     calendar = ks.date_range(start=start, end=end, freq=freq)
-
     return calendar
 
 # Lower limit of times in the dataset
@@ -265,7 +267,7 @@ def transition_matrix(df, min_date, max_date, intv):
     return list_matrix_tot
 
 def features_matrix(dataframe, min_date, max_date, intv):
-    shapefile = gpd.read_file('/content/drive/My Drive/Tesi Mirko/DataSet/shapefile/shapefile_2323.shp')
+    shapefile = gpd.read_file(pathShapeF)
     lista_zone = shapefile.FID.to_list()
     #lista_zone.insert(0, -1)
 
@@ -306,8 +308,8 @@ def features_matrix(dataframe, min_date, max_date, intv):
           print('---SHAPEADJ---', j)
 
           df_spark = dataframe_ridotto.to_spark()
+          #print(df_spark)
           df_grouped = df_spark.groupBy('to_zone_fid').agg(count('to_zone_fid').alias('count'))
-
           df_grouped = lista_zone_2.join(df_grouped, on = ['to_zone_fid'], how='left').fillna(0)
 
           matrix = df_grouped.select('count').toPandas().values.reshape((len(lista_zone), 1))
@@ -342,40 +344,46 @@ def stoptime_bound(df):
 
 
 if __name__ == '__main__':
-    ks.set_option('compute.default_index_type', 'distributed-sequence')
-    ks.set_option('compute.ops_on_diff_frames', True)
+    #ks.set_option('compute.default_index_type', 'distributed') #-sequence')
+    #ks.set_option('compute.ops_on_diff_frames', True)
     #ks.set_option('compute.shortcut_limit', 20000000)
     #ks.set_option('compute.max_rows', 20000000)
+            #.config("spark.driver.memory",  "128g") \
+    
+    #spark = SparkSession.builder\
+    #    .master("local")\
+    #    .appName("Pyspark")\
+    #    .config("spark.driver.memory",  "60g") \
+    #    .config("spark.network.timeout", "300s")\
+    #    .config("spark.memory.fraction", 0.6)\
+    #    .config('executor.cores', 110)\
+    #    .config("spark.sql.codegen.wholeStage", False)\
+    #    .config("spark.sql.autoBroadcastJoinThreshold", "-1")\
+    #    .config("spark.executor.heartbeatInterval", '299s')\
+    #    .config("spark.executor.memory", '60g')\
+    #    .config("spark.checkpoint.compress", True)\
+    #    .getOrCreate()
 
-    spark = SparkSession.builder\
-        .master("local")\
-        .appName("Pyspark")\
-        .config("spark.driver.memory", "128g") \
-        .config("spark.network.timeout", "300s")\
-        .config("spark.memory.fraction", 0.6)\
-        .config("spark.sql.codegen.wholeStage", False)\
-        .config("spark.sql.autoBroadcastJoinThreshold", "-1")\
-        .config("spark.executor.heartbeatInterval", '300s')\
-        .config("spark.executor.memory", '50g')\
-        .config("spark.checkpoint.compress", True)\
-        .getOrCreate()
-
-    spark.catalog.clearCache()
-
-    '''
+    #spark.catalog.clearCache()
+    
     # Simple spark configuration
     spark = SparkSession.builder\
-        .master("local")\
+        .master("local[8]")\
         .appName("Pyspark")\
         .config('spark.ui.port', '4050')\
+        .config('spark.executor.cores', "100")\
         .getOrCreate()
-    '''
-
+    spark.catalog.clearCache()
+    
+    
     # Upload CSV datas
-    df = ks.read_csv(pathCSV, dtype = {'from_timedate':str, 'to_timedate':str})
+    df = ks.read_csv(pathCSV, sep=';', dtype = {'from_timedate':str, 'to_timedate':str})
     #df = df.spark.cache()
     df = df.spark.repartition(30)
     df = preprocessing(df)
+
+#    print(df.head())
+#    exit()
 
     print('-----------OUTPUT------------')
 

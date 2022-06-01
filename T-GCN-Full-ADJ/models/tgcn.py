@@ -12,11 +12,6 @@ class TGCNGraphConvolution(nn.Module):
         self._output_dim = output_dim
         self._bias_init_value = bias
         print('---TGCN-3---')
-
-        #with open(adj, 'rb') as f:
-            #self._adj = pickle.load(f)
-
-        #self.register_buffer("adj", adj)
         self.weights = nn.Parameter(
             torch.FloatTensor(self._num_gru_units + 1, self._output_dim)
         )
