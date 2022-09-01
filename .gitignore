@@ -1,1 +1,7 @@
 data/
+results/
+Error_evaluation/
+RET/
+RES/
+MODEL/
+lightning_logs/

@@ -2,19 +2,76 @@ import argparse
 import torch
 import torch.nn as nn
 from utils.graph_conv import calculate_laplacian_with_self_loop
+import torch.nn.functional as F
+
+#class GCNGraphConvolution(nn.Module):
+#    def __init__(self, adj, output_dim: int, bias: float = 0.0):
+#        super(GCNGraphConvolution, self).__init__()
+#        self._output_dim = output_dim
+#        self._bias_init_value = bias
+#        self.register_buffer(
+#            "laplacian", calculate_laplacian_with_self_loop(torch.FloatTensor(adj))
+#        )
+#        self.weights = nn.Parameter(
+#            torch.FloatTensor(1, self._output_dim)
+#        )
+#        self.biases = nn.Parameter(torch.FloatTensor(self._output_dim))
+#        self.reset_parameters()
+#
+#    def reset_parameters(self):
+#        nn.init.xavier_uniform_(self.weights)
+#        nn.init.constant_(self.biases, self._bias_init_value)
+#
+#    def forward(self, inputs):
+#        #print('---GRAPH-CONV---', inputs.size())
+#        #exit()
+#        batch_size, num_nodes = inputs.shape
+#        # inputs (batch_size, num_nodes) -> (batch_size, num_nodes, 1)
+#        inputs = inputs.reshape((batch_size, num_nodes))
+#        # hidden_state (batch_size, num_nodes, num_gru_units)
+#                # [x, h] (batch_size, num_nodes, num_gru_units + 1)
+#        concatenation = inputs.transpose(0, 1)
+#        # A[x, h] (num_nodes, (num_gru_units + 1) * batch_size)
+#        a_times_concat = self.laplacian @ concatenation
+#
+#        #print('...', a_times_concat.size())
+#        #exit()
+#        # A[x, h] (num_nodes, F, batch_size)
+#        a_times_concat = a_times_concat.reshape(
+#            (num_nodes, 1, batch_size)
+#        )
+#        # A[x, h] (batch_size, num_nodes, F)
+#        a_times_concat = a_times_concat.transpose(0, 2).transpose(1, 2)
+#        # A[x, h] (batch_size * num_nodes,F)
+#        a_times_concat = a_times_concat.reshape(
+#            (batch_size * num_nodes, 1)
+#        )
+#        # A[x, h]W + b (batch_size * num_nodes, output_dim)
+#        outputs = a_times_concat @ self.weights + self.biases
+#        # A[x, h]W + b (batch_size, num_nodes, output_dim)
+#        outputs = outputs.reshape((batch_size, num_nodes, self._output_dim))
+#        return outputs
+
+#    @property
+#    def hyperparameters(self):
+#        return {
+#            "output_dim": self._output_dim,
+#            "bias_init_value": self._bias_init_value,
+#        }
 
 
 class TGCNGraphConvolution(nn.Module):
-    def __init__(self, adj, num_gru_units: int, output_dim: int, bias: float = 0.0):
+    def __init__(self, adj, num_gru_units: int, output_dim: int, features: int = 1, bias: float = 0.0):
         super(TGCNGraphConvolution, self).__init__()
         self._num_gru_units = num_gru_units
         self._output_dim = output_dim
+        self._features = features
         self._bias_init_value = bias
         self.register_buffer(
             "laplacian", calculate_laplacian_with_self_loop(torch.FloatTensor(adj))
         )
         self.weights = nn.Parameter(
-            torch.FloatTensor(self._num_gru_units + 1, self._output_dim)
+            torch.FloatTensor(self._num_gru_units + self._features, self._output_dim)
         )
         self.biases = nn.Parameter(torch.FloatTensor(self._output_dim))
         self.reset_parameters()
@@ -24,11 +81,13 @@ class TGCNGraphConvolution(nn.Module):
         nn.init.constant_(self.biases, self._bias_init_value)
 
     def forward(self, inputs, hidden_state):
-        #print('---GRAPH-CONV---', inputs.size())
-        #exit()
-        batch_size, num_nodes = inputs.shape
+        try:
+            batch_size, num_nodes, features = inputs.shape
+        except:
+            batch_size, num_nodes = inputs.shape
+            features = 1
         # inputs (batch_size, num_nodes) -> (batch_size, num_nodes, 1)
-        inputs = inputs.reshape((batch_size, num_nodes, 1))
+        inputs = inputs.reshape((batch_size, num_nodes, features)) #1))
         # hidden_state (batch_size, num_nodes, num_gru_units)
         hidden_state = hidden_state.reshape(
             (batch_size, num_nodes, self._num_gru_units)
@@ -39,24 +98,19 @@ class TGCNGraphConvolution(nn.Module):
         concatenation = concatenation.transpose(0, 1).transpose(1, 2)
         # [x, h] (num_nodes, (num_gru_units + 1) * batch_size)
         concatenation = concatenation.reshape(
-            (num_nodes, (self._num_gru_units + 1) * batch_size)
+            (num_nodes, (self._num_gru_units + features) * batch_size)
         )
-        #print('---CONCAT---', concatenation.size())
-        #print('---LAPL---', self.laplacian.size())
         # A[x, h] (num_nodes, (num_gru_units + 1) * batch_size)
         a_times_concat = self.laplacian @ concatenation
-
-        #print('...', a_times_concat.size())
-        #exit()
         # A[x, h] (num_nodes, num_gru_units + 1, batch_size)
         a_times_concat = a_times_concat.reshape(
-            (num_nodes, self._num_gru_units + 1, batch_size)
+            (num_nodes, self._num_gru_units + features, batch_size)
         )
         # A[x, h] (batch_size, num_nodes, num_gru_units + 1)
         a_times_concat = a_times_concat.transpose(0, 2).transpose(1, 2)
         # A[x, h] (batch_size * num_nodes, num_gru_units + 1)
         a_times_concat = a_times_concat.reshape(
-            (batch_size * num_nodes, self._num_gru_units + 1)
+            (batch_size * num_nodes, self._num_gru_units + features)
         )
         # A[x, h]W + b (batch_size * num_nodes, output_dim)
         outputs = a_times_concat @ self.weights + self.biases
@@ -82,12 +136,13 @@ class TGCNCell(nn.Module):
         self._hidden_dim = hidden_dim
         self.register_buffer("adj", torch.FloatTensor(adj))
         self.graph_conv1 = TGCNGraphConvolution(
-            self.adj, self._hidden_dim, self._hidden_dim * 2, bias=1.0
+            self.adj, self._hidden_dim, self._hidden_dim * 2, #self._hidden_dim, 
+            bias=1.0
         )
         self.graph_conv2 = TGCNGraphConvolution(
-            self.adj, self._hidden_dim, self._hidden_dim
+            self.adj, self._hidden_dim, self._hidden_dim, #self._hidden_dim
         )
-
+        
     def forward(self, inputs, hidden_state):
         # [r, u] = sigmoid(A[x, h]W + b)
         # [r, u] (batch_size, num_nodes * (2 * num_gru_units))
@@ -115,6 +170,7 @@ class TGCN(nn.Module):
         self._hidden_dim = hidden_dim
         self.register_buffer("adj", torch.FloatTensor(adj))
         self.tgcn_cell = TGCNCell(self.adj, self._input_dim, self._hidden_dim)
+        #self.graph_conv =  GCNGraphConvolution(self.adj, self._hidden_dim)
 
     def forward(self, inputs):
         #print('---INPUT---', inputs.shape)
@@ -125,6 +181,9 @@ class TGCN(nn.Module):
         )
         output = None
         for i in range(seq_len):
+            #print(inputs[:, i, :].size())
+            #input = self.graph_conv(inputs[:, i, :])
+            #input = F.relu(input)
             output, hidden_state = self.tgcn_cell(inputs[:, i, :], hidden_state)
             output = output.reshape((batch_size, num_nodes, self._hidden_dim))
 

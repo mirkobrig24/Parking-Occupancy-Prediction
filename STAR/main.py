@@ -27,8 +27,8 @@ if gpus:
         print(e)  # Memory growth must be set before GPUs have been initializ
 
 # parameters
-DATAPATH = '.../DATAPATH'
-nb_epoch = 100  # number of epoch at training stage
+DATAPATH = '../results/input_1h.h5'
+nb_epoch = 200  # number of epoch at training stage
 # nb_epoch_cont = 150  # number of epoch at training (cont) stage
 batch_size = [16, 32, 64]  # batch size
 T = 24  # number of time intervals in one day
@@ -38,7 +38,7 @@ lr = 0.001  # learning rate
 len_c = 1  # length of closeness dependent sequence
 len_p = 0  # length of peroid dependent sequence
 len_t = 0  # length of trend dependent sequence
-len_cpt = [[1,0,0]]
+#len_cpt = [[1,0,0]]
 nb_residual_unit = [2,4,6]   # number of residual units
 
 nb_flow = 1  # there are two types of flows: new-flow and end-flow
@@ -62,8 +62,8 @@ if CACHEDATA and os.path.isdir(path_cache) is False:
 def build_model(len_c, len_p, len_t, nb_flow, map_height, map_width,
                 external_dim, nb_residual_unit, bn, bn2=False, save_model_pic=False, lr=0.001):
 
-    c_conf = (len_c, map_height,
-              map_width, nb_flow) if len_c > 0 else None
+    c_conf = (len_c, nb_flow, map_height,
+              map_width) if len_c > 0 else None
     p_conf = (len_p, nb_flow, map_height,
               map_width) if len_p > 0 else None
     t_conf = (len_t, nb_flow, map_height,
@@ -80,87 +80,39 @@ def build_model(len_c, len_p, len_t, nb_flow, map_height, map_width,
         plot_model(model, to_file='park_model.png', show_shapes=True)
 
     return model
-
-def read_cache(fname):
-    mmn = pickle.load(open('preprocessing_taxinyc.pkl', 'rb'))
-
-    f = h5py.File(fname, 'r')
-    num = int(f['num'].value)
-    X_train_all, Y_train_all, X_train, Y_train, X_val, Y_val, X_test, Y_test = [], [], [], [], [], [], [], []
-    for i in range(num):
-        X_train_all.append(f['X_train_all_%i' % i].value)
-        X_train.append(f['X_train_%i' % i].value)
-        X_val.append(f['X_val_%i' % i].value)
-        X_test.append(f['X_test_%i' % i].value)
-    Y_train_all = f['Y_train_all'].value
-    Y_train = f['Y_train'].value
-    Y_val = f['Y_val'].value
-    Y_test = f['Y_test'].value
-    external_dim = f['external_dim'].value
-    timestamp_train_all = f['T_train_all'].value
-    timestamp_train = f['T_train'].value
-    timestamp_val = f['T_val'].value
-    timestamp_test = f['T_test'].value
-    f.close()
-
-    return X_train_all, Y_train_all, X_train, Y_train, X_val, Y_val, X_test, Y_test, mmn, external_dim, timestamp_train_all, timestamp_train, timestamp_val, timestamp_test
-
-def cache(fname, X_train_all, Y_train_all, X_train, Y_train, X_val, Y_val, X_test, Y_test, external_dim, timestamp_train_all, timestamp_train, timestamp_val, timestamp_test):
-    h5 = h5py.File(fname, 'w')
-    h5.create_dataset('num', data=len(X_train_all))
-
-    for i, data in enumerate(X_train_all):
-        h5.create_dataset('X_train_all_%i' % i, data=data)
-    for i, data in enumerate(X_train):
-        h5.create_dataset('X_train_%i' % i, data=data)
-    for i, data in enumerate(X_val):
-        h5.create_dataset('X_val_%i' % i, data=data)
-    # for i, data in enumerate(Y_train):
-    for i, data in enumerate(X_test):
-        h5.create_dataset('X_test_%i' % i, data=data)
-
-    h5.create_dataset('Y_train_all', data=Y_train_all)
-    h5.create_dataset('Y_train', data=Y_train)
-    h5.create_dataset('Y_val', data=Y_val)
-    h5.create_dataset('Y_test', data=Y_test)
-    external_dim = -1 if external_dim is None else int(external_dim)
-    h5.create_dataset('external_dim', data=external_dim)
-    h5.create_dataset('T_train_all', data=timestamp_train_all)
-    h5.create_dataset('T_train', data=timestamp_train)
-    h5.create_dataset('T_val', data=timestamp_val)
-    h5.create_dataset('T_test', data=timestamp_test)
-    h5.close()
-
-print("loading data...")
 fname = os.path.join(path_cache, 'TaxiNYC_C{}_P{}_T{}.h5'.format(len_c, len_p, len_t))
 
-if os.path.exists(fname) and CACHEDATA:
-    X_train_all, Y_train_all, X_train, Y_train, \
-    X_val, Y_val, X_test, Y_test, mmn, external_dim, \
-    timestamp_train_all, timestamp_train, timestamp_val, timestamp_test = read_cache(
-        fname)
-    print("load %s successfully" % fname)
-else:
-    X_train_all, Y_train_all, X_train, Y_train, \
-    X_val, Y_val, X_test, Y_test, mmn, external_dim, \
-    timestamp_train_all, timestamp_train, timestamp_val, timestamp_test = TaxiNYC.load_data(
+#if os.path.exists(fname) and CACHEDATA:
+#    X_train_all, Y_train_all, X_train, Y_train, \
+#    X_val, Y_val, X_test, Y_test, mmn, external_dim, \
+#    timestamp_train_all, timestamp_train, timestamp_val, timestamp_test = read_cache(
+#        fname)
+#    print("load %s successfully" % fname)
+#else:
+def data(T, nb_flow, len_c, len_p, len_t, len_test, len_val, DATAPATH):
+    X_train_all, Y_train_all,X_test, Y_test, mmn, external_dim, \
+    timestamp_train_all,  timestamp_test = TaxiNYC.load_data(
         T=T, nb_flow=nb_flow, len_closeness=len_c, len_period=len_p, len_trend=len_t, len_test=len_test,
         len_val=len_val, meta_data=True, meteorol_data=False, holiday_data=False, datapath=DATAPATH)
-    if CACHEDATA:
-        cache(fname, X_train_all, Y_train_all, X_train, Y_train, X_val, Y_val, X_test, Y_test,
-                external_dim, timestamp_train_all, timestamp_train, timestamp_val, timestamp_test)
+    return  X_train_all, Y_train_all, X_test, Y_test, mmn, external_dim, \
+    timestamp_train_all, timestamp_test
+
 
 #print("\n days (test): ", [v[:8] for v in timestamp_test[0::T]])
 
-def train_model(lr, batch_size, residual_units, save_results=True, i=''):
+def train_model(batch_size, residual_units, len_c, len_p, len_t, save_results=False, i=''): #lr
     # get discrete parameters
     residual_units = int(residual_units) * 2
     batch_size = 2 ** int(batch_size)
-    # kernel_size = int(kernel_size)
-    lr = round(lr,5)
-
+    #kernel_size = int(kernel_size)
+    lr = 0.001 #round(lr,5)
+    len_c = int(len_c)
+    len_p = int(len_p)
+    len_t = int(len_t)
+    X_train_all, Y_train_all, X_test, Y_test, mmn, external_dim, \
+        timestamp_train_all, timestamp_test = data(T, nb_flow, len_c, len_p, len_t, len_test, len_val, DATAPATH)
     # build model
-    tf.keras.backend.set_image_data_format('channels_last')
+    tf.keras.backend.set_image_data_format('channels_first')
     model = build_model(len_c, len_p, len_t, nb_flow, map_height,
                         map_width, external_dim, residual_units,
                         bn=True,
@@ -168,7 +120,6 @@ def train_model(lr, batch_size, residual_units, save_results=True, i=''):
                         save_model_pic=False,
                         lr=lr
                         )
-    #print(model.summary())
     hyperparams_name = 'parking{}.c{}.p{}.t{}.resunits_{}.lr_{}.batchsize_{}'.format(
         i, len_c, len_p, len_t, residual_units,
         lr, batch_size)
@@ -206,7 +157,7 @@ def train_model(lr, batch_size, residual_units, save_results=True, i=''):
     score = model.evaluate(
         X_test, Y_test, batch_size=Y_test.shape[0], verbose=0)
     print('Test score: %.6f rmse (norm): %.6f rmse (real): %.6f' %
-          (score[0], score[1], score[0] * (mmn._max - mmn._min) / 2.))
+          (score[0], score[1], score[1] * (mmn._max - mmn._min) / 2.))
 
     if (save_results):
         print('evaluating using the model that has the best loss on the valid set')
@@ -217,7 +168,7 @@ def train_model(lr, batch_size, residual_units, save_results=True, i=''):
         score = evaluate(Y_test, Y_pred, mmn, rmse_factor=1)  # evaluate performance
 
         # save to csv
-        csv_name = os.path.join('results', 'star_parking_results.csv')
+        csv_name = os.path.join('results', f'star_parking_results_{T}.csv')
         if not os.path.isfile(csv_name):
             if os.path.isdir('results') is False:
                 os.mkdir('results')
@@ -233,7 +184,7 @@ def train_model(lr, batch_size, residual_units, save_results=True, i=''):
             file.write("\n")
             file.close()
         K.clear_session()
-
+    
     # bayes opt is a maximization algorithm, to minimize validation_loss, return 1-this
     bayes_opt_score = 1.0 - score[0]
 
@@ -242,36 +193,41 @@ def train_model(lr, batch_size, residual_units, save_results=True, i=''):
 # bayesian optimization
 optimizer = BayesianOptimization(f=train_model,
                                  pbounds={'residual_units': (1, 3.999), # *2
-                                          'lr': (0.001, 0.001),
-                                          'batch_size': (3, 5.999) # *2
-                                          #'len_c': (2, 12.999)
-                                        #   'kernel_size': (3, 5.999)
+                                          #'lr': (0.001, 0.001),
+                                          'batch_size': (3, 5.999), # *2
+                                          'len_c': (1, 8.999),
+                                          'len_p': (1, 5.999),
+                                          'len_t': (1, 2.999)
+                                          #   'kernel_size': (3, 5.999)
                                  },
                                  verbose=2)
 
-optimizer.maximize(init_points=2, n_iter=10)
+#optimizer.maximize(init_points=2, n_iter=10)
 
 # training-test-evaluation iterations with best params
 if os.path.isdir('results') is False:
     os.mkdir('results')
-targets = [e['target'] for e in optimizer.res]
-bs_fname = 'bs_parking.json'
-with open(os.path.join('results', bs_fname), 'w') as f:
-    json.dump(optimizer.res, f, indent=2)
-best_index = targets.index(max(targets))
-params = optimizer.res[best_index]['params']
+#targets = [e['target'] for e in optimizer.res]
+#bs_fname = f'bs_parking_{T}.json'
+#with open(os.path.join('results', bs_fname), 'w') as f:
+#    json.dump(optimizer.res, f, indent=2)
+#best_index = targets.index(max(targets))
+#params = optimizer.res[best_index]['params']
 # save best params
-params_fname = 'star_parking_best_params.json'
-with open(os.path.join('results', params_fname), 'w') as f:
-    json.dump(params, f, indent=2)
-# with open(os.path.join('results', params_fname), 'r') as f:
-#     params = json.load(f)
+params_fname = f'star_parking_best_params_{T}.json'
+#with open(os.path.join('results', params_fname), 'w') as f:
+#    json.dump(params, f, indent=2)
+with open(os.path.join('results', params_fname), 'r') as f:
+    params = json.load(f)
 
 # iterations with best params
 for i in range(0, 10):
     train_model(residual_units=params['residual_units'],
-                lr=params['lr'],
+                #lr=params['lr'],
                 batch_size=params['batch_size'],
+                len_c = params['len_c'],
+                len_p = params['len_p'],
+                len_t = params['len_t'],
                 # kernel_size=params['kernel_size'],
                 save_results=True,
                 i=i)

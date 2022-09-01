@@ -10,7 +10,7 @@ from keras.layers import (
     multiply,
     Dropout,
     ZeroPadding3D,
-    advanced_activations as aa,
+    #advanced_activations as aa,
     LeakyReLU
 )
 from keras.layers import Conv2D, SeparableConv2D, GlobalAveragePooling2D, Conv3D, GlobalMaxPooling2D
@@ -39,7 +39,7 @@ def _bn_relu_conv(nb_filter, nb_row, nb_col, subsample=(1, 1), bn=False):
         activation = Activation('relu')(input)
 
         return Conv2D(filters=nb_filter, kernel_size=(nb_row, nb_col), strides=subsample, 
-                         kernel_regularizer=regularizers.l2(regularizers_l2), padding="same", data_format='channels_last')(activation)                                                                                                                                                                                                                                        
+                         kernel_regularizer=regularizers.l2(regularizers_l2), padding="same")(activation) # data_format='channels_last'                                                                                                                                                                                                                                        
     return f
 
 def ResUnits2D(residual_unit, nb_filter, map_height=16, map_width=8, repetations=1, bn=False):
@@ -71,14 +71,21 @@ def STAR(c_conf=(3, 2, 32, 32), p_conf=(1, 2, 32, 32), t_conf=(1, 2, 32, 32), ex
     external_dim
     '''
     # map_height, map_width = 32, 32
-    map_height, map_width = c_conf[1], c_conf[2]
+    map_height, map_width = c_conf[2], c_conf[3]
     nb_flow = 1
     nb_filter = 12
-
     main_inputs = []
-
+    if (p_conf is None) & (t_conf is None):
+        input = Input(shape=((nb_flow * c_conf[0], map_height, map_width)))
+    elif p_conf is None:
+        input = Input(shape=((nb_flow * (c_conf[0]+t_conf[0]*2), map_height, map_width)))
+    elif t_conf is None:
+        input = Input(shape=((nb_flow * (c_conf[0]+p_conf[0]*2), map_height, map_width)))
+    else:
+        input = Input(shape=((nb_flow * (c_conf[0]+p_conf[0]*2+t_conf[0]*2), map_height, map_width)))
+    
     #input = Input(shape=((nb_flow * (c_conf[0]), map_height, map_width)))
-    input = Input(shape=(map_height, map_width, (nb_flow * (c_conf[3]))))
+    #input = Input(shape=(map_height, map_width, (nb_flow * (c_conf[3]))))
 
     main_inputs.append(input)
     main_output = main_inputs[0]
@@ -91,11 +98,11 @@ def STAR(c_conf=(3, 2, 32, 32), p_conf=(1, 2, 32, 32), t_conf=(1, 2, 32, 32), ex
         h1 = Dense(units=1*map_height * map_width, activation='relu')(embedding)
         external_output = Reshape((map_height, map_width, 1))(h1)
         #main_output = Concatenate(axis=1)([main_output, external_output])
-        print('external_dim:', external_dim)
-    else:
-        print('external_dim:', external_dim)
+        #print('external_dim:', external_dim)
+    #else:
+        #print('external_dim:', external_dim)
 
-    conv1 = Conv2D(nb_filter, (3, 3), kernel_regularizer=regularizers.l2(regularizers_l2),padding="same", data_format='channels_last')(main_output)
+    conv1 = Conv2D(nb_filter, (3, 3), kernel_regularizer=regularizers.l2(regularizers_l2),padding="same")(main_output) #, data_format='channels_last'
 
     # [nb_residual_unit] Residual Units
     residual_output = ResUnits2D(_residual_unit, nb_filter=nb_filter,
@@ -105,17 +112,17 @@ def STAR(c_conf=(3, 2, 32, 32), p_conf=(1, 2, 32, 32), t_conf=(1, 2, 32, 32), ex
     activation = Activation('relu')(residual_output)
 
     #conv2 = Conv2D(nb_filter, (3, 3), padding='same')(activation)
-    conv2 = Conv2D(nb_flow, (3, 3), padding='same', data_format='channels_last')(activation)
+    conv2 = Conv2D(nb_flow, (3, 3), padding='same')(activation) #data_format='channels_last'
     main_output = Activation('tanh')(conv2)
 
     # model = Model(input=main_inputs, output=main_output)
     model = Model(main_inputs, main_output)
 
-    plot_model(model, to_file='/content/drive/My Drive/Tesi Mirko/model.png', show_shapes=True)
+    #plot_model(model, to_file='/content/drive/My Drive/Tesi Mirko/model.png', show_shapes=True)
 
     return model
 
 if __name__ == '__main__':
     model = STAR(external_dim=8, nb_residual_unit=2)
-    plot_model(model, to_file='/home/suhan/wanghn/ST-ResNet.png', show_shapes=True)
-    model.summary()
+    #plot_model(model, to_file='/home/suhan/wanghn/ST-ResNet.png', show_shapes=True)
+    #model.summary()

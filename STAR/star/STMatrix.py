@@ -63,7 +63,7 @@ class STMatrix(object):
                 return False
         return True
 
-    def create_dataset(self, len_closeness=1, len_trend=0, TrendInterval=0, len_period=0, PeriodInterval=0):
+    def create_dataset(self, len_closeness=1, len_trend=0, TrendInterval=7, len_period=0, PeriodInterval=1):
         """current version
         """
         # offset_week = pd.DateOffset(days=7)
@@ -75,8 +75,8 @@ class STMatrix(object):
         Y = []
         timestamps_Y = []
 
-        C_in_P = 0
-        C_in_T = 0
+        C_in_P = 2
+        C_in_T = 2
 
         depends = [range(1, len_closeness+1),
                    # [PeriodInterval * self.T * j for j in range(1, len_period+1)],
@@ -84,7 +84,6 @@ class STMatrix(object):
                   [i + PeriodInterval * self.T * j for j in range(1, len_period+1) for i in range(0, C_in_P)],
                   [i + TrendInterval * self.T * j for j in range(1, len_trend+1) for i in range(0, C_in_T)]]
         i = max(self.T * TrendInterval * len_trend + C_in_T-1, self.T * PeriodInterval * len_period, len_closeness)
-        print(i)
         while i < len(self.pd_timestamps):
             Flag = True
             for depend in depends:

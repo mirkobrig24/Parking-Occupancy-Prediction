@@ -181,7 +181,6 @@ def load_data(T=3, nb_flow=1, len_closeness=None, len_period=None, len_trend=Non
     if meta_data and holiday_data and meteorol_data:
         print('time feature:', time_feature.shape, 'holiday feature:', holiday_feature.shape,
               'meteorol feature: ', meteorol_feature.shape, 'mete feature: ', meta_feature.shape)
-
     XC = np.vstack(XC)
     XP = np.vstack(XP)
     XT = np.vstack(XT)

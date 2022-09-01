@@ -114,8 +114,8 @@ def load_data(T=3, nb_flow=1, len_closeness=1, len_period=0, len_trend=0,
         # remove a certain day which does not have 48 timestamps
         #data, timestamps = remove_incomplete_days(data, timestamps, T)
 
-        data = data.reshape(data.shape[0], data.shape[1], data.shape[2], 1)
-        data = data[:, :, :, :nb_flow]
+        data = data.reshape(data.shape[0], 1, data.shape[1], data.shape[2])
+        data = data[:, :nb_flow, :, :]
         data[data < 0] = 0.
         data_all.append(data)
         timestamps_all.append(timestamps)
@@ -146,14 +146,18 @@ def load_data(T=3, nb_flow=1, len_closeness=1, len_period=0, len_trend=0,
         # _XCPT[:, 0:6, :, :] = _XC
         # _XCPT = np.zeros((_XC.shape[0], 2*(len_closeness+len_period+len_trend), 32, 32))
         print("_XC shape: ", _XC.shape, "_XP shape:", _XP.shape, "_XT shape:", _XT.shape, "_Y shape:", _Y.shape)
-        #_XCPT = np.concatenate((_XC, _XP),axis=1)
-        #_XCPT = np.concatenate((_XCPT, _XT),axis=1)
+        _XCPT = _XC
+        if _XP.shape[0] != 0:
+            _XCPT = np.concatenate((_XCPT, _XP),axis=1)
+        if _XT.shape[0] != 0:
+            _XCPT = np.concatenate((_XCPT, _XT),axis=1)
         # _XCPT = np.concatenate((_XCPT, _XT),axis=1)
         # print(_XCPT.shape)
     # XC = np.vstack(XC)
     # XP = np.vstack(XP)
     # XT = np.vstack(XT)
-        XCPT.append(_XC)
+        #XCPT.append(_XC)
+        XCPT.append(_XCPT)
         Y.append(_Y)
 
         timestamps_Y += _timestamps_Y
@@ -164,17 +168,19 @@ def load_data(T=3, nb_flow=1, len_closeness=1, len_period=0, len_trend=0,
     # print("XC shape: ", XC.shape, "XP shape: ", XP.shape, "XT shape: ", XT.shape, "Y shape:", Y.shape)
 
     XCPT_train_all, Y_train_all = XCPT[:-len_test], Y[:-len_test]
-    XCPT_train, Y_train = XCPT[:-len_val], Y[:-len_val]
-    XCPT_val, Y_val = XCPT[-len_val:-len_test], Y[-len_val:-len_test]
+    #XCPT_train, Y_train = XCPT[:-len_val], Y[:-len_val]
+    #XCPT_val, Y_val = XCPT[-len_val:-len_test], Y[-len_val:-len_test]
     XCPT_test, Y_test = XCPT[-len_test:], Y[-len_test:]
   
-    timestamp_train_all, timestamp_train, timestamp_val, timestamp_test = timestamps_Y[:-len_test], timestamps_Y[:-len_val], timestamps_Y[-len_val:-len_test], timestamps_Y[-len_test:]
+    #timestamp_train_all, timestamp_train, timestamp_val, timestamp_test = timestamps_Y[:-len_test], timestamps_Y[:-len_val], timestamps_Y[-len_val:-len_test], timestamps_Y[-len_test:]
+    timestamp_train_all, timestamp_test = timestamps_Y[:-len_test], timestamps_Y[-len_test:]
 
-    X_train_all, X_train, X_val, X_test = [], [], [], []
 
+    #X_train_all, X_train, X_val, X_test = [], [], [], []
+    X_train_all, X_test = [], []
     X_train_all.append(XCPT_train_all)
-    X_train.append(XCPT_train)
-    X_val.append(XCPT_val)
+    #X_train.append(XCPT_train)
+    #X_val.append(XCPT_val)
     X_test.append(XCPT_test)
 
     meta_feature = []
@@ -198,17 +204,17 @@ def load_data(T=3, nb_flow=1, len_closeness=1, len_period=0, len_trend=0,
             # load meteorol data
             meteorol_feature = load_meteorol(timestamps_Y, datapath)
             meta_feature.append(meteorol_feature)
-        
         meta_feature = np.hstack(meta_feature) if len(
             meta_feature) > 0 else np.asarray(meta_feature)
         metadata_dim = meta_feature.shape[1] if len(
             meta_feature.shape) > 1 else None
         metadata_dim = meta_feature.shape[1]
-        meta_feature_train_all, meta_feature_train, meta_feature_val, meta_feature_test = meta_feature[
-        :-len_test], meta_feature[:-len_val], meta_feature[-len_val:-len_test], meta_feature[-len_test:]
+        #meta_feature_train_all, meta_feature_train, meta_feature_val, meta_feature_test = meta_feature[
+        #:-len_test], meta_feature[:-len_val], meta_feature[-len_val:-len_test], meta_feature[-len_test:]
+        meta_feature_train_all, meta_feature_test = meta_feature[:-len_test],meta_feature[-len_test:]
         X_train_all.append(meta_feature_train_all)
-        X_train.append(meta_feature_train)
-        X_val.append(meta_feature_val)
+        #X_train.append(meta_feature_train)
+        #X_val.append(meta_feature_val)
         X_test.append(meta_feature_test)
     else:
         metadata_dim = None
@@ -216,13 +222,14 @@ def load_data(T=3, nb_flow=1, len_closeness=1, len_period=0, len_trend=0,
     for _X in X_train_all:
         print(_X.shape, )
     print()
-    for _X in X_train:
-        print(_X.shape, )
-    print()
-    for _X in X_val:
-        print(_X.shape, )
-    print()
+    #for _X in X_train:
+    #    print(_X.shape, )
+    #print()
+    #for _X in X_val:
+    #    print(_X.shape, )
+    #print()
     for _X in X_test:
         print(_X.shape, )
     print()
-    return X_train_all, Y_train_all, X_train, Y_train, X_val, Y_val, X_test, Y_test, mmn, metadata_dim, timestamp_train_all, timestamp_train, timestamp_val, timestamp_test
+    #return X_train_all, Y_train_all, X_train, Y_train, X_val, Y_val, X_test, Y_test, mmn, metadata_dim, timestamp_train_all, timestamp_train, timestamp_val, timestamp_test
+    return X_train_all, Y_train_all, X_test, Y_test, mmn, metadata_dim, timestamp_train_all, timestamp_test

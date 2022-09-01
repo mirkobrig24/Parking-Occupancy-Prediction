@@ -2,13 +2,21 @@ import numpy as np
 import pandas as pd
 import torch
 import pickle
-
+from .dataset_generation import load_data
+import h5py
 
 def load_features(feat_path, dtype=np.float32):
     feat_df = pd.read_csv(feat_path, header=None)
     feat = np.array(feat_df, dtype=dtype)
     feat = feat.T
     return feat
+
+def load_features_2(fname):
+    f = h5py.File(fname, 'r')
+    data = np.array(f['data'])
+    timestamps = np.array(f['date'])
+    f.close()
+    return data
 
 def load_adjacency_matrix(adj_path, dtype=np.float32):
     with open(adj_path, 'rb') as f:
@@ -23,6 +31,44 @@ def load_adjacency_matrix(adj_path, dtype=np.float32):
     adj = np.array(adj_df, dtype=dtype)
     return adj
 '''
+
+def transform(X, max):
+    X = 1. * X / max
+    X = X * 2. - 1.
+    return X
+
+def generate_torch_datasets_2(T, nb_flow, seq_len, len_period, len_trend, len_test,datapath):
+    print(T)
+    T = T[0] if type(T) is tuple else T
+    nb_flow = nb_flow[0] if type(nb_flow) is tuple else nb_flow
+    len_period = len_period[0] if type(len_period) is tuple else len_period
+    len_trend = len_trend[0] if type(len_trend) is tuple else len_trend
+    len_test = len_test[0] if type(len_test) is tuple else len_test
+
+    train_X, train_Y, test_X, test_Y, mmn= load_data(T=T, nb_flow=nb_flow, len_closeness=seq_len, len_period=len_period, len_trend=len_trend, len_test=len_test,
+        datapath=datapath)
+    if seq_len > 1:
+        train_X = torch.squeeze(torch.FloatTensor(train_X))
+        test_X = torch.squeeze(torch.FloatTensor(test_X))
+    train_dataset = torch.utils.data.TensorDataset(
+        train_X, torch.FloatTensor(train_Y)
+    )
+
+    print('---TRAIN-DATASET-LEN---', len(train_dataset))
+    print('---TRAIN_X---', train_X.size())
+    print('---TRAIN_Y---', torch.FloatTensor(train_Y).size())
+    print('------------------------------------')
+    
+    test_dataset = torch.utils.data.TensorDataset(
+        test_X, torch.FloatTensor(test_Y)
+    )
+
+    print('---TEST-DATASET-LEN---', len(test_dataset))
+    print('---TEST_X---', test_X.size())
+    print('---TEST_Y---', torch.FloatTensor(test_Y).size())
+    print('------------------------------------')
+    return train_dataset, test_dataset
+
 
 def generate_dataset(
     data, seq_len, pre_len, time_len=None, split_ratio=0.8, normalize=True

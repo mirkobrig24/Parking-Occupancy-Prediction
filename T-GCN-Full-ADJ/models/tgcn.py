@@ -37,73 +37,9 @@ class TGCNGraphConvolution(nn.Module):
         )
         # [x, h] (batch_size, num_nodes, num_gru_units + 1)
         #print('---CONCAT-PRE--', hidden_state.size())
-        concatenation = torch.cat((inputs, hidden_state), dim=2).unsqueeze(-1)
-        #print('---CONCAT---', concatenation.size())
-        # [x, h] (num_nodes, num_gru_units + 1, batch_size)
-        
-        #concatenation = concatenation.transpose(0, 1).transpose(1, 2).unsqueeze(-1)
-        
-        # [x, h] (num_nodes, (num_gru_units + 1) * batch_size)
-        #print('---CONCAT---', concatenation.size())       
-        #concatenation = concatenation.reshape(
-            #(num_nodes, (self._num_gru_units + 1) * batch_size)
-        #)
-        
-        #print('---CONCAT---', concatenation.size())
-        #print('---LAPL---', laplacian.size())
-        #exit()
-        # [bathc_size, num_nodes, num_nodes] -> [bathc_size, num_nodes, num_nodes, num_gru_units + 1]
-        #laplacian_2 = torch.cat((laplacian, hidden_state), dim=3)
-        '''
-        laplacian_2 = laplacian.unsqueeze(0).repeat((self._num_gru_units + 1), 1, 1, 1)
-        print('---LAP-2---', laplacian_2.size())
-        
-        laplacian_2 = laplacian_2.reshape(((self._num_gru_units + 1) * batch_size), num_nodes, num_nodes)
-        print('---LAP-2---', laplacian_2.size())
-        exit()
-        '''
-        #print('---TYPE---', type(laplacian))
-        #for i in range(self._num_gru_units):
-            #laplacian = torch.cat((laplacian, input_adj))
-        #print('---TYPE---', type(laplacian))
-        #exit()
-
-        #concatenation = concatenation.reshape(num_nodes, self._num_gru_units, batch_size)
-        res = [torch.bmm(laplacian, concatenation[:, :, i, :]) for i in range(self._num_gru_units + 1)]
-
-        '''
-        
-        pos = 0
-        for i in range(batch_size * (self._num_gru_units + 1)):
-            #laplacian_3 = laplacian_2[pos, :, :]
-            #concatenation_2 = concatenation[:, i]
-            if pos < len(laplacian):
-                a_times_concat = laplacian[pos] @ concatenation[:, i]
-                print('---DENTRO-FOR---', a_times_concat.size())
-                #a_times_concat = torch.sparse.mm(laplacian[pos], concatenation[:, i])
-                res.append(a_times_concat)
-                pos += 1
-            else:
-                pos = 0
-                a_times_concat = laplacian[pos] @ concatenation[:, i]
-                #a_times_concat = torch.sparse.mm(laplacian[pos], concatenation[:, i])
-                res.append(a_times_concat)
-                pos += 1
-        '''
-        a_times_concat = torch.vstack(res)
-        #print('---DOPO-FOR---', a_times_concat.size())
-        a_times_concat = a_times_concat.transpose(0,1).reshape(num_nodes, (batch_size * (self._num_gru_units + 1)), 1).transpose(0,1).squeeze()
-        #print('---DOPO-FOR---', a_times_concat.size())
-        
-
-        #print('---A-CONCAT---', a_times_concat.size())
-        #exit()
-        # A[x, h] (num_nodes, num_gru_units + 1, batch_size)
-        a_times_concat = a_times_concat.reshape(
-            (num_nodes, self._num_gru_units + 1, batch_size)
-        )
+        concatenation = torch.cat((inputs, hidden_state), dim=2)
         # A[x, h] (batch_size, num_nodes, num_gru_units + 1)
-        a_times_concat = a_times_concat.transpose(0, 2).transpose(1, 2)
+        a_times_concat = torch.bmm(laplacian, concatenation)
         # A[x, h] (batch_size * num_nodes, num_gru_units + 1)
         a_times_concat = a_times_concat.reshape(
             (batch_size * num_nodes, self._num_gru_units + 1)
