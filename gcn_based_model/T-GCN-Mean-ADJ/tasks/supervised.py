@@ -91,7 +91,6 @@ class SupervisedForecastTask(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        #print('----validation---')
         predictions, y = self.shared_step(batch, batch_idx)
         #predictions = predictions* self.feat_max_val  # Normalized
         #y = y * self.feat_max_val
@@ -110,7 +109,6 @@ class SupervisedForecastTask(pl.LightningModule):
             "ExplainedVar": explained_variance,
         }
         self.log_dict(metrics)
-
         # se devo prendere i pesi
         #fname = 'TGCN_parking_realVSpred.h5'
         #h5 = h5py.File(fname, 'w')

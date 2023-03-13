@@ -9,7 +9,7 @@ from statsmodels.tsa.arima.model import ARIMA
 from utils import load_stdata, remove_incomplete_days, evaluate, save_to_csv
 
 def arima_prediction(data, T, len_test):
-    train_data, test_data = data[:len_test], data[-len_test:]
+    train_data, test_data = data[:-len_test], data[-len_test:]
     num_rows, num_columns = data.shape[2], data.shape[3]
 
     prediction_shape = (len_test, data.shape[1], data.shape[2], data.shape[3])
@@ -32,7 +32,7 @@ def arima_prediction(data, T, len_test):
                     predicted_data[i][flow][row][column] = yhat
                     obs = test_data[i][flow][row][column]
                     history_region = np.append(history_region, obs)
-
+                    history_region = np.delete(history_region, 0)
                 print(f'flow {flow}, region {row}x{column}')
     
     return predicted_data
@@ -69,8 +69,8 @@ def arima_prediction_parking():
     # plot_region_data(real_data, predicted_data, (13,3), 0)
 
     # save to csv
-    save_to_csv('ARIMA', 'parking', score)
-
+    save_to_csv('ARIMA_sosta_media_new', 'parking', score)
+    # ARIMA_sosta_media_new ---> elimino ogni volta la prima osservazione
 
 
 if __name__ == '__main__':

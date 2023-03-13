@@ -1,10 +1,10 @@
 import torch
 import torchmetrics
-#from tensorflow.keras.metrics import (
-#    RootMeanSquaredError,
-#    MeanAbsolutePercentageError,
-#    MeanAbsoluteError
-#)
+from tensorflow.keras.metrics import (
+    RootMeanSquaredError,
+    MeanAbsolutePercentageError,
+    MeanAbsoluteError
+)
 import numpy as np
 
 def denormalize(x, mmn):
@@ -23,14 +23,27 @@ def mape(y_true, y_pred, mmn):
     y_true = inverse_transform(y_true, mmn).cpu()
     y_pred = inverse_transform(y_pred, mmn).cpu()
     #idx = y_true > 10 # for 8H sample
-    idx = y_true > 5 # for 1H sample
+    idx = y_true > 0 # for 1H sample
     #m = MeanAbsolutePercentageError()
     #m.update_state(y_true[idx], y_pred[idx])
     #return m.result().numpy()
-    
-    mean_abs_percentage_error = torchmetrics.MeanAbsolutePercentageError().to('cuda')
-    error = mean_abs_percentage_error(y_pred[idx], y_true[idx])*100
-    return error
+    #mean_abs_percentage_error = torchmetrics.MeanAbsolutePercentageError().to('cuda')
+    #if y_true[idx].size()[0] != 0:
+    #    error = mean_abs_percentage_error(y_pred[idx], y_true[idx])*100
+    #return error
+
+    m = MeanAbsolutePercentageError()
+    #print(y_true[idx].size())
+    # Ci sono alcune sample che hanno zero y_true > 0
+    if y_true[idx].size()[0] != 0:
+        m.update_state(y_true[idx], y_pred[idx])
+#    else:
+#        skip
+    #print('valoreeee')
+    #print(m.result().numpy())
+    #mean_abs_percentage_error = torchmetrics.MeanAbsolutePercentageError()
+    #print(mean_abs_percentage_error(y_pred[idx],y_true[idx]))
+    return m.result().numpy()
 
 def accuracy(pred, y):
     """

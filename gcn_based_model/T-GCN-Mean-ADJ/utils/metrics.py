@@ -25,7 +25,16 @@ def mape(y_true, y_pred, mmn):
     #idx = y_true > 10 # for 8H sample
     idx = y_true > 0 # for 1H sample
     m = MeanAbsolutePercentageError()
-    m.update_state(y_true[idx], y_pred[idx])
+    #print(y_true[idx].size())
+    # Ci sono alcune sample che hanno zero y_true > 0
+    if y_true[idx].size()[0] != 0:
+        m.update_state(y_true[idx], y_pred[idx])
+#    else:
+#        skip
+    #print('valoreeee')
+    #print(m.result().numpy())
+    #mean_abs_percentage_error = torchmetrics.MeanAbsolutePercentageError()
+    #print(mean_abs_percentage_error(y_pred[idx],y_true[idx]))
     return m.result().numpy()
     
     #mean_abs_percentage_error = torchmetrics.MeanAbsolutePercentageError().to('cuda')

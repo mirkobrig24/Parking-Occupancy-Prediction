@@ -5,6 +5,7 @@ import os
 #import sys
 from scipy.sparse import csr_matrix
 import geopandas as gpd
+import pandas as pd
 import pickle
 from pathlib import Path
 import argparse
@@ -13,6 +14,8 @@ from pyspark.sql.types import *
 from pyspark.sql.types import LongType, IntegerType
 from pyspark.sql.window import Window
 import timeit
+from pyspark.sql.functions import round   # import the method here
+import pyspark.sql.functions as f
 
 os.chdir(Path(__file__).resolve().parent)
 
@@ -49,8 +52,7 @@ def preprocessing(df):
     # Initial Filter
     # (df.triptime_s < 3278)
     # & (df.stoptime_s < 123818)
-    df = df.loc[ (df.tripdistance_m > 0) & (df.stoptime_s > 0)]
-
+    df = df.loc[ (df.tripdistance_m > 0) & (df.stoptime_s > 300)]
     #df = df.sort_values(by=['from_timedate_gmt', 'to_timedate_gmt'])
     #df = df.reset_index(drop = True)
 
@@ -79,7 +81,7 @@ def count_zones(dataframe, col):
 
 # Generator of calendar with specific timestamp (start/end='dd-mm-yyyy', freq='20min', '8hour', ...)
 def calendar(start, end, freq):
-    calendar = ks.date_range(start=start, end=end, freq=freq)
+    calendar = pd.date_range(start=start, end=end, freq=freq)
     return calendar
 
 # Lower limit of times in the dataset
@@ -195,13 +197,10 @@ def transition_matrix(df, min_date, max_date, intv):
 
        
         print('---SHAPEADJ---', j)
-
         df_spark = dataframe_ridotto #.to_spark()
-
         df_spark = df_spark.withColumn("peso", df_spark["peso"].cast(LongType()))
         df_grouped = df_spark.groupBy('from_zone_fid', 'to_zone_fid').agg(sum('peso').alias('peso'))
-
-        df_grouped = crossListe.join(df_grouped, on = ['from_zone_fid', 'to_zone_fid'], how='left').fillna(0)
+        df_grouped = crossListe.join(df_grouped, on = ['from_zone_fid', 'to_zone_fid'], how='left').fillna(0).orderBy(col('to_zone_fid'))
 
         matrix = df_grouped.select('peso').to_koalas().values.reshape((len(lista_zone), len(lista_zone)))
 
@@ -213,8 +212,8 @@ def transition_matrix(df, min_date, max_date, intv):
         #    continue
 
         #matrix = [el / sum(el) for el in matrix]
-        matrix = (matrix.T / matrix.sum(axis=1)).T
-        matrix = np.nan_to_num(matrix)
+        #matrix = (matrix.T / matrix.sum(axis=1)).T
+        #matrix = np.nan_to_num(matrix)
         matrix = csr_matrix(matrix)
         list_matrix_tot += [matrix]
         stop_time = timeit.default_timer()
@@ -257,7 +256,7 @@ def features_matrix(dataframe, min_date, max_date, intv):
     for j in range(0, len(cal) - 1):
         print('---FEAT---', j)
         # Dataset reduction with each time interval
-        dataframe_ridotto = df_check.filter(((df_check.to_timedate_gmt >= cal[j]) &
+        df_spark = df_check.filter(((df_check.to_timedate_gmt >= cal[j]) &
                                       (df_check.to_timedate_gmt < cal[j + 1])) |
                                      ((df_check.totimedate_plus_stoptime > cal[j]) &
                                       (df_check.totimedate_plus_stoptime <= cal[j + 1])) |
@@ -267,21 +266,23 @@ def features_matrix(dataframe, min_date, max_date, intv):
         #if dataframe_ridotto.shape[0] != 0:
         print('---SHAPEADJ---', j)
 
-        df_spark = dataframe_ridotto #.to_spark()
-          #print(df_spark)
-        df_grouped = df_spark.groupBy('to_zone_fid').agg(count('to_zone_fid').alias('count'))
-        df_grouped = lista_zone_2.join(df_grouped, on = ['to_zone_fid'], how='left').fillna(0)
-        matrix = df_grouped.select('count').to_koalas().values.reshape((len(lista_zone), 1))
+
+        df_spark = df_spark.withColumn('weight', round((cal[j + 1].timestamp() - unix_timestamp(col('from_timedate_gmt').cast(TimestampType())))/60))
+        w = Window.partitionBy('to_zone_fid')
+        df_spark = df_spark.select('idtrajectory', 'idterm','from_zone_fid','from_timedate_gmt','to_zone_fid','to_timedate_gmt','tripdistance_m','triptime_s','stoptime_s','totimedate_plus_stoptime','weight', f.sum('weight').over(w).alias('tot'), count(col('idterm')).over(w).alias('count')).orderBy(col("to_zone_fid"))
+        w = Window.partitionBy('to_zone_fid').orderBy(col('to_zone_fid'))        
+        df_spark = df_spark.withColumn("row", row_number().over(w)).where("row == 1").drop("row")
+        print(df_spark.head())
+        df_spark = df_spark.withColumn("media", col('tot')/(col('count')))
+        print(df_spark.head())
+        exit()
+                #df_grouped = df_spark.groupBy('to_zone_fid').agg(count('to_zone_fid').alias('count'))
+        df_grouped = lista_zone_2.join(df_spark, on = ['to_zone_fid'], how='left').fillna(0).orderBy(col('to_zone_fid'))
+        matrix = df_grouped.select('media').to_koalas().values.reshape((len(lista_zone), 1))
         matrix = csr_matrix(matrix)
         list_matrix_tot += [matrix]
         del matrix
 
-        #else:
-        #  matrix = np.zeros((len(lista_zone), 1))
-        #  matrix = csr_matrix(matrix)
-        #  list_matrix_tot += [matrix]
-        #  del matrix
-        #  continue
 
 
     df_check.unpersist()
@@ -289,6 +290,8 @@ def features_matrix(dataframe, min_date, max_date, intv):
     return list_matrix_tot
 
 def stoptime_bound(df):
+    print(df.stoptime_s.median())
+    exit()
     #Upper Bound e Lower Bound
     print(df.stoptime_s.describe())
     Q1 = df.stoptime_s.describe().to_list()[4]
@@ -344,7 +347,10 @@ if __name__ == '__main__':
     df = preprocessing(df)
 
     print(df.head())
+
+    print(stoptime_bound(df))
     exit()
+
 
     print('-----------OUTPUT------------')
 

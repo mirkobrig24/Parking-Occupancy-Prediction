@@ -10,10 +10,19 @@ import utils.data
 import utils.logging
 import torch
 from bayes_opt import BayesianOptimization
+from bayes_opt.logger import JSONLogger
+from bayes_opt.event import Events
+from bayes_opt.util import load_logs
 import numpy as np
 import json
 import csv
 import os
+
+class newJSONLogger(JSONLogger) :
+      def __init__(self, path):
+            self._path=None
+            super(JSONLogger, self).__init__()
+            self._path = path if path[-5:] == ".json" else path + ".json"
 
 # datapath for features matrix and adj matrix
 #DATA_PATHS = {
@@ -94,7 +103,6 @@ def main_supervised_opt(batch_s, lr, seq_l, len_period, len_trend, hidden_d):
     trainer = pl.Trainer.from_argparse_args(args, callbacks=callbacks)
     trainer.fit(task, dm)
     results = trainer.validate(datamodule=dm, ckpt_path='best')
-
     bayes_opt_score = 1.0 - results[0]['RMSE']
 
     return bayes_opt_score
@@ -132,7 +140,7 @@ def main():
     rank_zero_info(vars(args))
 
     optimizer = BayesianOptimization(f=main_supervised_opt,
-                                      pbounds={'batch_s':(3, 3.999),
+                                      pbounds={'batch_s':(3, 5.999),
                                                 'lr': (0.0001, 0.1),
                                                'seq_l':(1, 8.999),
                                                 'len_period':(1, 4.999),
@@ -141,21 +149,32 @@ def main():
                                             },
                                       verbose=2)
 
-    optimizer.maximize(init_points=2, n_iter=5)
+    bs_fname = f'bs_parking_{task}.json'
+    #if os.path.exists("./results/" + bs_fname):
+    #    load_logs(optimizer, logs=["./results/" + bs_fname])
+    #    print('Load {} records from disk.'.format(len(optimizer.space)))
+    #logger = newJSONLogger(path="./results/" + bs_fname)
+    #optimizer.subscribe(Events.OPTIMIZATION_STEP, logger)
+    #load_logs(optimizer, logs=["./results/" + bs_fname])
+
+    #optimizer.maximize(init_points=2, n_iter=5)
+
+    # New optimizer is loaded with previously seen points
+    #optimizer.maximize(init_points=2, n_iter=5)
 
     if os.path.isdir('results') is False:
         os.mkdir('results')
-    with open(f'results/params_{task}.json', 'w') as f:
-        json.dump(optimizer.res, f, indent=2)
+    #with open(f'results/params_{task}.json', 'w') as f:
+    #    json.dump(optimizer.res, f, indent=2)
     
 
-    targets = [e['target'] for e in optimizer.res]
-    best_index = targets.index(max(targets))
-    opt = optimizer.res[best_index]['params']
-    with open(f'results/opt_{task}.json', 'w') as f:
-        json.dump(opt, f, indent=2)
-    #with open(f'results/opt_{task}.json', 'r') as f:
-    #    opt = json.load(f)
+    #targets = [e['target'] for e in optimizer.res]
+    #best_index = targets.index(max(targets))
+    #opt = optimizer.res[best_index]['params']
+    #with open(f'results/opt_{task}.json', 'w') as f:
+    #    json.dump(opt, f, indent=2)
+    with open(f'results/opt_{task}.json', 'r') as f:
+        opt = json.load(f)
 
     
     fieldnames = ['iteration', 'val_loss', 'RMSE', 'MAE', 'accuracy', 'R2', 'ExplainedVar']
@@ -166,7 +185,6 @@ def main():
             writer.writerow(fieldnames)
 
       
-
     #exit()
     for i in range(5):
         results = main_supervised(batch_s=  opt['batch_s'],
@@ -206,6 +224,7 @@ if __name__ == "__main__":
         default="supervised",
     )
     parser.add_argument("--log_path", type=str, default=None, help="Path to the output console log file")
+    parser.add_argument("--verbose", type=str, default=False)
     parser.add_argument("--send_email", "--email", action="store_true", help="Send email when finished")
 
     temp_args, _ = parser.parse_known_args()

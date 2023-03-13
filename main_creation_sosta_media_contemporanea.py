@@ -8,6 +8,7 @@ import pyspark.pandas as ps
 import databricks.koalas as ks
 from pyspark.sql import SparkSession
 #import sys
+import pandas as pd
 from scipy.sparse import csr_matrix
 import geopandas as gpd
 import pickle
@@ -58,7 +59,7 @@ def preprocessing_mov(df):
 
 # Generator of calendar with specific timestamp (start/end='dd-mm-yyyy', freq='20min', '8hour', ...)
 def calendar(start, end, freq):
-    calendar = ks.date_range(start=start, end=end, freq=freq)
+    calendar = pd.date_range(start=start, end=end, freq=freq)
     return calendar
 
 
