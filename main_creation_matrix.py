@@ -98,25 +98,28 @@ def time_limits_inf(df, intv):
     # Create calendar
     cal = calendar(min, max, intv)
     cal = cal.to_frame(index=False, name='date')
-    cal = cal.to_spark()
-    
+    cal = spark.createDataFrame(cal)
+ 
     #print(cal.show())
     df_spark = df.to_spark()
     
     df_spark.createOrReplaceTempView('df_spark')
     cal.createOrReplaceTempView('cal')
-    res1 = df_spark.join(cal).where((to_date(df_spark.from_timedate_gmt) == to_date(cal.date)) & \
-                               (df_spark.from_timedate_gmt.cast(TimestampType()) >= cal.date.cast(TimestampType()))).withColumnRenamed('date','date_1')#.crossJoin(cal).withColumnRenamed('date', 'date_2')#.crossJoin(cal).withColumnRenamed('date', 'date_3')
+    res1 = df_spark.join(cal).where((to_date(df_spark.from_timedate_gmt) == to_date(cal.date))& \
+                               (df_spark.from_timedate_gmt.cast(TimestampType()) >= cal.date.cast(TimestampType()))).withColumnRenamed('date','date_1')
 
     res1 = res1.drop('from_timedate_gmt')#, 'to_timedate_gmt')#, 'date_2')
     res1 = res1.withColumnRenamed('date_1', 'from_timedate_gmt')
     w = Window.partitionBy("idtrajectory").orderBy(col("from_timedate_gmt").desc()) #, col("to_timedate_gmt").desc())
     res1 = res1.withColumn("row", row_number().over(w)).where("row == 1").drop("row")
     res1.createOrReplaceTempView('res1')
-    
-    res2 = res1.join(cal).where((to_date(df_spark.to_timedate_gmt) == to_date(cal.date)) & \
-                               (df_spark.to_timedate_gmt.cast(TimestampType()) >= cal.date.cast(TimestampType()))).withColumnRenamed('date','date_1')
-    
+
+    res2 = res1.join(cal)#.where((to_date(res1.to_timedate_gmt) == to_date(cal.date)) & \
+                               #(res1.to_timedate_gmt.cast(TimestampType()) >= cal.date.cast(TimestampType()))).withColumnRenamed('date','date_1')
+
+    res2 = res2.filter((to_date(res2.to_timedate_gmt) == to_date(res2.date))& \
+                               (res2.to_timedate_gmt.cast(TimestampType()) >= res2.date.cast(TimestampType()))).withColumnRenamed('date','date_1')
+
     res2 = res2.drop('to_timedate_gmt')#, 'to_timedate_gmt')#, 'date_2')
     res2 = res2.withColumnRenamed('date_1', 'to_timedate_gmt')
     w = Window.partitionBy("idtrajectory").orderBy(col("to_timedate_gmt").desc())
