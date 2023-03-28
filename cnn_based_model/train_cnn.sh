@@ -21,7 +21,7 @@ python main.py
 
 # # ST3DNet Da Fare
 cd ../ST3DNet
-python prepareData.py
+#python prepareData.py
 python main.py
 # python main_taxiBJ.py
 

@@ -37,7 +37,7 @@ T = 24  # number of time intervals in one day
 lr = [0.00015, 0.00035]  # learning rate
 len_closeness = len_c = 4  # length of closeness dependent sequence - should be 6
 len_period = len_p = 4  # length of peroid dependent sequence
-len_trend = len_t = 4  # length of trend dependent sequence
+len_trend = len_t = 1  # length of trend dependent sequence
 len_cpt = [[4,4,4]]
 
 nb_flow = 1  # there are two types of flows: new-flow and end-flow
@@ -241,7 +241,7 @@ params_fname = f'mst3d_parking_{task}_best_params.json'
 #    json.dump(params, f, indent=2)
 with open(os.path.join('results', params_fname), 'r') as f:
     params = json.load(f)
-for i in range(0, 5):
+for i in range(0, 1):
     train_model(lr=params['lr'],
                 batch_size=params['batch_size'],
                 # kernel_size=params['kernel_size'],

@@ -218,7 +218,7 @@ with open(os.path.join('results', params_fname), 'r') as f:
     params = json.load(f)
 
 # iterations with best params
-for i in range(0, 5):
+for i in range(0, 1):
     train_model(residual_units=params['residual_units'],
                 lr=params['lr'],
                 batch_size=params['batch_size'],

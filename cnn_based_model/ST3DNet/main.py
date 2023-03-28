@@ -32,7 +32,7 @@ T = 24  # number of time intervals in one day
 # lr = 0.00002  # learning rate
 len_closeness = len_c =  6  # length of closeness dependent sequence
 len_period = len_p = 0  # length of peroid dependent sequence
-len_trend = len_t = 4  # length of trend dependent sequence
+len_trend = len_t = 1  # length of trend dependent sequence
 # nb_residual_unit = [4,5,6]   # number of residual units
 nb_flow = 1  # there are two types of flows: new-flow and end-flow
 # divide data into two subsets: Train & Test,
@@ -178,7 +178,7 @@ params_fname = f'st3dnet_Parking_{task}_best_params.json'
 #    json.dump(params, f, indent=2)
 with open(os.path.join('results', params_fname), 'r') as f:
     params = json.load(f)
-for i in range(0, 5):
+for i in range(0, 1):
     train_model(residual_units=params['residual_units'],
                 lr=params['lr'],
                 batch_size=params['batch_size'],

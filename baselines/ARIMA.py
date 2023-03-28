@@ -38,13 +38,18 @@ def arima_prediction(data, T, len_test):
     return predicted_data
 
 def arima_prediction_parking():
-    DATAPATH = '../results/feat_sosta_media_contemporanea_1h.h5'
+    #DATAPATH = '../results/feat_sosta_media_contemporanea_1h.h5'
+    DATAPATH = '../results_one_month/feat_CNN_sosta_media_contemporanea_1h.h5'
     nb_flow = 1 # i.e. inflow and outflow
     T = 24 # number timestamps per day
     #len_test = T * 10 # number of timestamps to predict (ten days)
-    days_test = 122
-    len_test = int((T*days_test) * 0.2)
+    #days_test = 122
+    #len_test = int((T*days_test) * 0.2)
     # load data
+    
+    days_test = 10  
+    len_test = T*days_test
+
     fname = os.path.join(DATAPATH)
     print("file name: ", fname)
     data, timestamps = load_stdata(fname)
@@ -69,7 +74,7 @@ def arima_prediction_parking():
     # plot_region_data(real_data, predicted_data, (13,3), 0)
 
     # save to csv
-    save_to_csv('ARIMA_sosta_media_new', 'parking', score)
+    save_to_csv('ARIMA_sosta_media_one_month', 'parking', score)
     # ARIMA_sosta_media_new ---> elimino ogni volta la prima osservazione
 
 

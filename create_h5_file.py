@@ -1,5 +1,4 @@
 import pandas as pd
-import databricks.koalas as ks
 import h5py
 import numpy as np
 import pickle
@@ -8,14 +7,14 @@ from tqdm import tqdm
 os.environ["PYARROW_IGNORE_TIMEZONE"] = "1"
 
 
+gcn = True
 
-
-# Definizione del calendario con intervallo temporale scelto (start/end='dd-mm-yyy', freq=intervallo di creazione di ogni data (es. '15min'))
+# Generator of calendar with specific timestamp (start/end='dd-mm-yyyy', freq='20min', '8hour', ...)
 def calendar(start, end, freq):
-  calendar = ks.date_range(start=start, end=end, freq=freq)
-  return calendar
+    calendar = pd.date_range(start=start, end=end, freq=freq)
+    return calendar
 
-with open('results/features_matrix_8H.pickle', 'rb') as f:
+with open('results_one_month/features_matrix_sosta_media_contemporanea_60min.pickle', 'rb') as f:
     x = pickle.load(f)
 
 #x_0 = x[0].todense()
@@ -27,16 +26,19 @@ print(tot.shape)
 df = pd.DataFrame(tot)
 
 print('prima dimensione', df.to_numpy().shape)
+if gcn:
+  #df = pd.read_csv('results/feat_8h.csv', header=None)
+  feat = df.to_numpy().T
+  print(np.sum(feat, axis=0).shape)
+  exit()
+  feat_resh = feat.reshape((tot.shape[1], tot.shape[0])) #54, 43))
+  print('Dimensione gcn features', feat_resh.shape)
+else:
+  feat_resh = df.to_numpy().reshape((tot.shape[1], 54, 43))
+  print('Dimensione cnn features', feat_resh.shape)
 
-#df = pd.read_csv('results/feat_8h.csv', header=None)
-feat = df.to_numpy().T
-print('seconda', feat.shape)
-feat_resh = feat.reshape((tot.shape[1], tot.shape[0])) #54, 43))
-print('terza', feat_resh.shape)
-exit()
 
-
-cal = calendar('2013-01-01 00:00:00', '2013-12-31 23:59:00', '1H')
+cal = calendar('2013-05-01 00:00:00', '2013-05-31 23:59:00', '1H')
 print(len(cal))
 cal_np = cal.to_list()
 lista = list()
@@ -47,7 +49,7 @@ for i in range(0, len(cal_np)-1):
 cal_np2 = np.array(lista)
 cal_np2 = cal_np2.astype(np.dtype('|S16'))
 
-hf = h5py.File('results/feat_GCN_8h.h5', 'w')
+hf = h5py.File('results_one_month/feat_GNN_sosta_media_contemporanea1h.h5', 'w')
 hf.create_dataset('data', data=feat_resh)
 # Salvo le date che fanno riferimento a ogni singola matrice
 hf.create_dataset('date', data=cal_np2)

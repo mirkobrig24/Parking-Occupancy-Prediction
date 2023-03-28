@@ -162,7 +162,7 @@ def my_s2t(strings, T=3):
 class STMatrix(object):
     """docstring for STMatrix"""
 
-    def __init__(self, data, timestamps, T=48, CheckComplete=True, Hours0_23=False):
+    def __init__(self, data, timestamps, T=48, CheckComplete=False, Hours0_23=False):
         super(STMatrix, self).__init__()
         assert len(data) == len(timestamps)
         self.data = data
@@ -1193,17 +1193,24 @@ def load_data_taxiNYC(T=24, nb_flow=2, len_closeness=None, len_period=None, len_
 
 ### load and cache mean time parking 
 # parameters
-DATAPATH = '../../results/feat_sosta_media_contemporanea_1h.h5'
-task = 'sosta_media_contemporanea'
+DATAPATH = '../../results_one_month/feat_CNN_sosta_media_contemporanea_1h.h5'
+task = 'sosta_media_contemporanea_one_month'
+#DATAPATH = '../../results/feat_sosta_media_contemporanea_1h.h5'
+#task = 'sosta_media_contemporanea'
 T = 24  # number of time intervals in one day
 len_closeness = 6  # length of closeness dependent sequence
 len_period = 0  # length of peroid dependent sequence
-len_trend = 4  # length of trend dependent sequence
+len_trend = 1  # length of trend dependent sequence
 nb_flow = 1  # there are two types of flows: new-flow and end-flow
 # divide data into two subsets: Train & Test,
-days_test = 122
-len_test = int((T*days_test) * 0.2)
-len_val = 2*len_test
+
+days_test = 10
+len_test = T*days_test
+len_val = 0
+
+#days_test = 122
+#len_test = int((T*days_test) * 0.2)
+#len_val = 2*len_test
 map_height, map_width = 54, 43  # grid size
 
 X_train, Y_train, X_test, Y_test, mmn, external_dim, timestamp_train, timestamp_test = \

@@ -20,13 +20,13 @@ import pyspark.sql.functions as f
 os.chdir(Path(__file__).resolve().parent)
 
 # Datapath file CSV (dataset)
-pathCSV = 'data/trips2323_new.csv'
+pathCSV = 'data/trips2323_mese.csv'
 
 # Path ShapeFile
 pathShapeF = 'data/shapefile/shapefile_2323.shp'
 
 # Path for results
-pathRes = 'results/'
+pathRes = 'results_one_month/'
 
 # Skip division per 0
 np.seterr(divide='ignore', invalid='ignore')
@@ -201,19 +201,9 @@ def transition_matrix(df, min_date, max_date, intv):
         df_spark = df_spark.withColumn("peso", df_spark["peso"].cast(LongType()))
         df_grouped = df_spark.groupBy('from_zone_fid', 'to_zone_fid').agg(sum('peso').alias('peso'))
         df_grouped = crossListe.join(df_grouped, on = ['from_zone_fid', 'to_zone_fid'], how='left').fillna(0).orderBy(col('to_zone_fid'))
-
         matrix = df_grouped.select('peso').to_koalas().values.reshape((len(lista_zone), len(lista_zone)))
 
 
-        #else:
-        #   matrix = np.zeros((len(lista_zone), len(lista_zone)))
-        #    matrix = csr_matrix(matrix)
-        #    list_matrix_tot += [matrix]
-        #    continue
-
-        #matrix = [el / sum(el) for el in matrix]
-        #matrix = (matrix.T / matrix.sum(axis=1)).T
-        #matrix = np.nan_to_num(matrix)
         matrix = csr_matrix(matrix)
         list_matrix_tot += [matrix]
         stop_time = timeit.default_timer()
@@ -348,8 +338,8 @@ if __name__ == '__main__':
 
     print(df.head())
 
-    print(stoptime_bound(df))
-    exit()
+    #print(stoptime_bound(df))
+    #exit()
 
 
     print('-----------OUTPUT------------')

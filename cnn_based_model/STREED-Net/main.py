@@ -220,7 +220,7 @@ params_fname = f'{model_name}_Parking_{task}_params.json'
 #    json.dump(params, f, indent=2)
 with open(os.path.join('results', params_fname), 'r') as f:
     params = json.load(f)
-for i in range(0, 5):
+for i in range(0, 1):
     train_model(encoder_blocks=params['encoder_blocks'],
                 lr=params['lr'],
                 batch_size=params['batch_size'],

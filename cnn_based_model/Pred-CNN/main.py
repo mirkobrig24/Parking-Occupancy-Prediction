@@ -214,7 +214,7 @@ params_fname = f'pred-cnn_parking_{task}_best_params.json'
 #    json.dump(params, f, indent=2)
 with open(os.path.join('results', params_fname), 'r') as f:
     params = json.load(f)
-for i in range(0, 5):
+for i in range(0, 1):
     train_model(num_hidden=params['num_hidden'],
                 encoder_length=params['encoder_length'],
                 decoder_length=params['decoder_length'],

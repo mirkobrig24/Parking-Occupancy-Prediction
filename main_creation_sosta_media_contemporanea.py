@@ -22,16 +22,16 @@ import timeit
 os.chdir(Path(__file__).resolve().parent)
 
 # Datapath file CSV (dataset)
-#pathCSV = '/Users/ali/Tesi/data/movimenti_rid2.csv'
-#pathCSV = '/Users/ali/Tesi/data/movimenti_5000.csv'
-pathCSV = 'data/parking_flow_movement.csv'
+#pathCSV = 'data/parking_flow_movement.csv'
+pathCSV = 'data/parking_flow_movement_one_month.csv'
 
 
 # Path ShapeFile
 pathShapeF = 'data/shapefile/shapefile_2323.shp'
 
 # Path for results
-pathRes = 'results/'
+#pathRes = 'results/'
+pathRes = 'results_one_month/'
 
 # Skip division per 0
 np.seterr(divide='ignore', invalid='ignore')
@@ -113,10 +113,11 @@ def features_matrix_mov(dataframe, min_date, max_date, intv):
 
 if __name__ == '__main__':
 
+        #.config('spark.driver.memory',"126g")\
     spark = SparkSession.builder\
         .master("local[10]")\
         .appName("Pyspark")\
-        .config('spark.driver.memory', "126g")\
+        .config('spark.driver.memory', "60g")\
         .config('spark.ui.port', '4050')\
         .config("spark.local.dir", "/home/gpu2/spark-temp")\
         .config("spark.sql.session.timeZone', 'America/New_York")\
@@ -127,7 +128,7 @@ if __name__ == '__main__':
     # Upload CSV datas
     df = ks.read_csv(pathCSV, sep=';', dtype = {'time':str})
     #df = df.spark.cache()
-    df = df.spark.repartition(10)
+    df = df.spark.repartition(100)
     df = preprocessing_mov(df)
 
 

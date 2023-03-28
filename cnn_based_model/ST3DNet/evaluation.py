@@ -11,7 +11,7 @@ def evaluate(y_true, y_pred, rmse_factor=1):
         m_factor = rmse_factor
         m = RootMeanSquaredError()
         m.update_state(y_true, y_pred)
-        return m.result().numpy() * m_factor
+        return m.result().numpy() #* m_factor
     
     def mape(y_true, y_pred):
         idx = y_true > 0
