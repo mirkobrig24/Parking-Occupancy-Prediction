@@ -259,16 +259,20 @@ def features_matrix(dataframe, min_date, max_date, intv):
         #if dataframe_ridotto.shape[0] != 0:
         print('---SHAPEADJ---', j)
 
+        # apportare le modifhe opportune al timestamp
+        df_spark = df_spark.withColumn('mean_time', (f.when((((cal[j+1].timestamp() - unix_timestamp(col('to_timedate_gmt').cast(TimestampType())))/60)-120 <= ((cal[j + 1].timestamp() - cal[j].timestamp())/60))  & (to_timestamp(col("totimedate_plus_stoptime")) > cal[j + 1]), 
+        ((cal[j+1].timestamp() - unix_timestamp(col('to_timedate_gmt').cast(TimestampType())))/60)-120) #cal[j + 1] - col('to_timedate_gmt').cast(TimestampType())))
+        .when((((cal[j+1].timestamp() - unix_timestamp(col('to_timedate_gmt').cast(TimestampType())))/60)-120 <= 60) & (col("totimedate_plus_stoptime") < cal[j + 1]), (unix_timestamp(col("totimedate_plus_stoptime")) -  unix_timestamp(col('to_timedate_gmt').cast(TimestampType())))/60) 
+        .when((col("to_timedate_gmt") < cal[j]) & (col("totimedate_plus_stoptime") > cal[j]) & (col("totimedate_plus_stoptime") < cal[j + 1]), ((unix_timestamp(col('totimedate_plus_stoptime').cast(TimestampType())) - cal[j].timestamp() )/60)+ 120)
+        .otherwise((cal[j + 1].timestamp() - cal[j].timestamp())/60)))
 
-        df_spark = df_spark.withColumn('weight', round((cal[j + 1].timestamp() - unix_timestamp(col('from_timedate_gmt').cast(TimestampType())))/60))
+        #df_spark = df_spark.withColumn('weight', round((cal[j + 1].timestamp() - unix_timestamp(col('from_timedate_gmt').cast(TimestampType())))/60))
         w = Window.partitionBy('to_zone_fid')
-        df_spark = df_spark.select('idtrajectory', 'idterm','from_zone_fid','from_timedate_gmt','to_zone_fid','to_timedate_gmt','tripdistance_m','triptime_s','stoptime_s','totimedate_plus_stoptime','weight', f.sum('weight').over(w).alias('tot'), count(col('idterm')).over(w).alias('count')).orderBy(col("to_zone_fid"))
+        df_spark = df_spark.select('idtrajectory', 'idterm','from_zone_fid','from_timedate_gmt','to_zone_fid','to_timedate_gmt','tripdistance_m','triptime_s','stoptime_s','totimedate_plus_stoptime','mean_time', f.sum('mean_time').over(w).alias('tot'), count(col('idterm')).over(w).alias('count')).orderBy(col("to_zone_fid"))
         w = Window.partitionBy('to_zone_fid').orderBy(col('to_zone_fid'))        
         df_spark = df_spark.withColumn("row", row_number().over(w)).where("row == 1").drop("row")
-        print(df_spark.head())
+        #print(df_spark.head())
         df_spark = df_spark.withColumn("media", col('tot')/(col('count')))
-        print(df_spark.head())
-        exit()
                 #df_grouped = df_spark.groupBy('to_zone_fid').agg(count('to_zone_fid').alias('count'))
         df_grouped = lista_zone_2.join(df_spark, on = ['to_zone_fid'], how='left').fillna(0).orderBy(col('to_zone_fid'))
         matrix = df_grouped.select('media').to_koalas().values.reshape((len(lista_zone), 1))
@@ -357,7 +361,7 @@ if __name__ == '__main__':
     elif args.mat == 'feat_mat':
         # Features Matrix
         result_fmat = features_matrix(df, args.date_start, args.date_end, args.freq)
-        with open(pathRes + f'features_matrix_{args.freq}.pickle', 'wb') as f:
+        with open(pathRes + f'features_matrix_mean_time_{args.freq}.pickle', 'wb') as f:
             pickle.dump(result_fmat, f)
         print('File creato!')
 
