@@ -57,7 +57,7 @@ def ha_prediction(data, timestamps, T, len_test):
 
 def ha_prediction_parking():
     #DATAPATH = '../results/feat_sosta_media_contemporanea_1h.h5'
-    DATAPATH = '../results_one_month/feat_CNN_sosta_media_contemporanea_1h.h5'    
+    DATAPATH = '../results_one_month/feat_CNN_mean_time_1h.h5'    
     nb_flow = 1 # i.e. inflow and outflow
     T = 24 # number timestamps per day
     #days_test = 122
@@ -86,7 +86,7 @@ def ha_prediction_parking():
     score = evaluate(real_data, predicted_data)
 
     # save to csv
-    save_to_csv('HA', 'parking_sosta_media_one_month', score)
+    save_to_csv('HA', 'parking_mean_time_one_month', score)
 
 
 

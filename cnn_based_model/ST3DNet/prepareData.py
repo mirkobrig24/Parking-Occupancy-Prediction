@@ -1193,10 +1193,10 @@ def load_data_taxiNYC(T=24, nb_flow=2, len_closeness=None, len_period=None, len_
 
 ### load and cache mean time parking 
 # parameters
-DATAPATH = '../../results_one_month/feat_CNN_sosta_media_contemporanea_1h.h5'
-task = 'sosta_media_contemporanea_one_month'
-#DATAPATH = '../../results/feat_sosta_media_contemporanea_1h.h5'
-#task = 'sosta_media_contemporanea'
+DATAPATH = '../../results_one_month/feat_CNN_mean_time_1h.h5'
+task = 'mean_time_one_month'
+#DATAPATH = '../../results/feat_mean_time_1h.h5'
+#task = 'mean_time'
 T = 24  # number of time intervals in one day
 len_closeness = 6  # length of closeness dependent sequence
 len_period = 0  # length of peroid dependent sequence

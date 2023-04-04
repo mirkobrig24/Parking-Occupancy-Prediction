@@ -62,7 +62,7 @@ nb_epoch = 150  # number of epoch at training stage
 path_result = 'RET'
 path_model = 'MODEL'
 # parameters
-task = 'sosta_media_contemporanea'
+task = 'mean_time'
 
 #path_cache = os.path.join(DATAPATH, 'CACHE', '3D-CLoST')  # cache path
 #if CACHEDATA and os.path.isdir(path_cache) is False:
@@ -137,7 +137,7 @@ save_to_csv(score, csv_name)
 
 ## TL without re-training
 # load weights
-model_fname = 'Parking_sosta_media_contemporanea_0.c6.p0.t1.resunits_6.lr_0.00042.batchsize_16.best.h5'
+model_fname = 'Parking_mean_time_0.c6.p0.t1.resunits_6.lr_0.00042.batchsize_16.best.h5'
 model.load_weights(os.path.join('MODEL', model_fname))
 
 # predict

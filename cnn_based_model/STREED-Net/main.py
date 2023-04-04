@@ -37,8 +37,8 @@ model_name = 'STREED-Net'
 
 
 # parameters
-DATAPATH = '../../results/feat_sosta_media_contemporanea_1h.h5'
-task = 'sosta_media_contemporanea'
+DATAPATH = '../../results/feat_mean_time_1h.h5'
+task = 'mean_time'
 
 nb_epoch = 150  # number of epoch at training stage
 T = 24  # number of time intervals in one day

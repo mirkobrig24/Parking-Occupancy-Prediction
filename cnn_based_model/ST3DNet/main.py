@@ -44,7 +44,7 @@ map_height, map_width = 54, 43  # grid size
 path_result = 'RET'
 path_model = 'MODEL'
 # parameters
-task = 'sosta_media_contemporanea'
+task = 'mean_time'
 if os.path.isdir(path_result) is False:
     os.mkdir(path_result)
 if os.path.isdir(path_model) is False:

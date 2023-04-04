@@ -8,3 +8,5 @@ lightning_logs/
 RES_mean_time/
 results_one_month/
 CACHE/
+*.h5
+*.pkl

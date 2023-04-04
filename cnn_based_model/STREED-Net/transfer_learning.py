@@ -52,8 +52,8 @@ model_name = 'STREED-Net'
 
 # parameters
 
-DATAPATH = '../../results_one_month/feat_CNN_sosta_media_contemporanea_1h.h5'
-task = 'sosta_media_contemporanea'
+DATAPATH = '../../results_one_month/feat_CNN_mean_time_1h.h5'
+task = 'mean_time'
 nb_epoch = 150  # number of epoch at training stage
 T = 24  # number of time intervals in one day
 CACHEDATA = False  # cache data or NOT
@@ -163,7 +163,7 @@ save_to_csv(score, csv_name)
 
 ## TL without re-training
 # load weights
-model_fname = 'STREED-Net.TaxiNYC_sosta_media_contemporanea_0.c4.p2.t0.encoderblocks_2.kernel_size_4.lr_0.00086.batchsize_16.best.h5'
+model_fname = 'STREED-Net.TaxiNYC_mean_time_0.c4.p2.t0.encoderblocks_2.kernel_size_4.lr_0.00086.batchsize_16.best.h5'
 model.load_weights(os.path.join('MODEL', model_fname))
 
 # predict

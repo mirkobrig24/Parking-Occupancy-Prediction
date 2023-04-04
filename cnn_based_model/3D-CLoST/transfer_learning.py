@@ -47,8 +47,8 @@ np.random.seed(1234)
 tf.random.set_seed(1234)
 
 # parameters
-DATAPATH = '../../results_one_month/feat_CNN_sosta_media_contemporanea_1h.h5'
-task = 'sosta_media_contemporanea'
+DATAPATH = '../../results_one_month/feat_CNN_mean_time_1h.h5'
+task = 'mean_time'
 # nb_epoch = 150  # number of epoch at training stage
 # nb_epoch_cont = 150  # number of epoch at training (cont) stage
 # batch_size = 64  # batch size
@@ -133,7 +133,7 @@ save_to_csv(score, csv_name)
 
 ## TL without re-training
 # load weights
-model_fname = 'Parking_sosta_media_contemporanea_0.c2.p0.t1.lstm_350.lstmnumber_2.lr_0.00033.batchsize_16.best.h5'
+model_fname = 'Parking_mean_time_0.c2.p0.t1.lstm_350.lstmnumber_2.lr_0.00033.batchsize_16.best.h5'
 model.load_weights(os.path.join('MODEL', model_fname))
 
 # predict
