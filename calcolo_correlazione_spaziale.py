@@ -16,7 +16,7 @@ from pysal.lib import weights  # Spatial weights
 # Utilizzare la media e KNN=20
 
 # Dati
-f = h5py.File("results_one_month/feat_CNN_sosta_media_contemporanea_1h.h5", 'r')
+f = h5py.File("results_one_month/feat_CNN_mean_time_1h.h5", 'r')
 data = np.array(f['data'])
 vec_mediana_i1=np.median(data, axis=0).reshape(2322,)
 vec_media_i1=np.mean(data, axis=0).reshape(2322,)

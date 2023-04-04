@@ -7,14 +7,14 @@ from tqdm import tqdm
 os.environ["PYARROW_IGNORE_TIMEZONE"] = "1"
 
 
-gcn = True
+gcn = False
 
 # Generator of calendar with specific timestamp (start/end='dd-mm-yyyy', freq='20min', '8hour', ...)
 def calendar(start, end, freq):
     calendar = pd.date_range(start=start, end=end, freq=freq)
     return calendar
 
-with open('results_one_month/features_matrix_sosta_media_contemporanea_60min.pickle', 'rb') as f:
+with open('results_one_month/features_matrix_mean_time_1H.pickle', 'rb') as f:
     x = pickle.load(f)
 
 #x_0 = x[0].todense()
@@ -49,7 +49,7 @@ for i in range(0, len(cal_np)-1):
 cal_np2 = np.array(lista)
 cal_np2 = cal_np2.astype(np.dtype('|S16'))
 
-hf = h5py.File('results_one_month/feat_GNN_sosta_media_contemporanea1h.h5', 'w')
+hf = h5py.File('results_one_month/feat_CNN_mean_time_1h.h5', 'w')
 hf.create_dataset('data', data=feat_resh)
 # Salvo le date che fanno riferimento a ogni singola matrice
 hf.create_dataset('date', data=cal_np2)

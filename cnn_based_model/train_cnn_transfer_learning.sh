@@ -1,6 +1,7 @@
 # STAR
 # Bisogna rifarlo andare
-cd STAR
+#cd STAR
+cd /home/gpu2/Documenti/Parking_prediction_problem/cnn_based_model/STAR
 #python main_bikeNYC.py
 python transfer_learning.py
 

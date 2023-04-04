@@ -10,7 +10,7 @@ cd ../ST-ResNet
 python main.py
 
 # # MST3D
-cd MST3D
+cd ../MST3D
 python main.py
 # python main_taxiBJ.py
 
